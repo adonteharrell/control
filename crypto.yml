@@ -4,7 +4,7 @@
   vars:
     nbde_client_bindings:
       - device: /dev/mapper/luks_vg-data_lv
-        encryption_password: James460!
+        encryption_password: password
         state: present
         slot: 2
         threshold: 1
@@ -36,7 +36,7 @@
         device: /dev/mapper/luks_vg-data_lv
         state: opened
         name: data
-        passphrase: James460!
+        passphrase: password
     - name: Create filesystem
       filesystem:  
         dev: /dev/mapper/data
