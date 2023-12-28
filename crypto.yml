@@ -1,0 +1,59 @@
+---
+- hosts: all
+  become: yes
+  vars:
+    nbde_client_bindings:
+      - device: /dev/mapper/luks_vg-data_lv
+        encryption_password: James460!
+        state: present
+        slot: 2
+        threshold: 1
+        nolog: false
+        servers:
+          - 10.0.0.176 
+    nolog: false
+  pre_tasks:
+    - name: Install packages
+      yum:
+        name: ['clevis', 'clevis-luks', 'clevis-dracut', 'cryptsetup']
+        state: latest
+    - name: Create vg
+      lvg: 
+        vg: luks_vg
+        pvs: /dev/sdb
+    - name: Create lv
+      lvol:
+        lv: data_lv
+        vg: luks_vg 
+        size: 100
+    - name: Create luks encryption
+      community.crypto.luks_device:
+        device: /dev/mapper/luks_vg-data_lv
+        state: present
+        passphrase: James460! 
+    - name: Open encryption
+      community.crypto.luks_device:
+        device: /dev/mapper/luks_vg-data_lv
+        state: opened
+        name: data
+        passphrase: James460!
+    - name: Create filesystem
+      filesystem:  
+        dev: /dev/mapper/data
+        fstype: ext4 
+  post_tasks:
+    - template:
+        src: /home/ansible/crypttab.j2
+        dest: /etc/crypttab
+    - file:
+        path: /data
+        state: directory
+    - lineinfile:
+        path: /etc/fstab
+        line: "/dev/mapper/data  /data  ext4  _netdev  1 2"
+        state: present
+    - command: partprobe
+    - command: mount -a
+  roles:
+    - name: NBDE 
+      role: /home/ansible/roles/nbde_client  
